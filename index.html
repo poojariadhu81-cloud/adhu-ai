@@ -1,0 +1,723 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADHU AI</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #10121a;
+            color: #f5f5f5;
+        }
+
+        .app {
+            display: flex;
+            height: 100vh;
+            min-height: 500px;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: #181b26;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border-right: 1px solid #303442;
+        }
+
+        .brand {
+            font-size: 25px;
+            font-weight: bold;
+            color: #9b8cff;
+            margin: 5px 0 12px;
+        }
+
+        button, input {
+            font: inherit;
+        }
+
+        button {
+            border: 0;
+            cursor: pointer;
+            border-radius: 9px;
+            padding: 10px 13px;
+            color: white;
+            background: #6656d9;
+        }
+
+        button:hover {
+            filter: brightness(1.15);
+        }
+
+        input {
+            background: #252938;
+            color: white;
+            border: 1px solid #383d50;
+            padding: 12px;
+            border-radius: 9px;
+            outline: none;
+            width: 100%;
+        }
+
+        .chat-list {
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .chat-item {
+            background: #252938;
+            padding: 10px;
+            border-radius: 9px;
+            cursor: pointer;
+            overflow-wrap: anywhere;
+        }
+
+        .chat-item.active {
+            background: #39335f;
+            outline: 1px solid #8475f5;
+        }
+
+        .chat-title {
+            font-size: 14px;
+            margin-bottom: 9px;
+        }
+
+        .chat-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .chat-actions button {
+            font-size: 12px;
+            padding: 6px;
+            background: #41465b;
+        }
+
+        .chat-actions .delete-button {
+            background: #8b3545;
+        }
+
+        .main {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar {
+            padding: 17px 22px;
+            border-bottom: 1px solid #303442;
+            font-size: 19px;
+            font-weight: bold;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px max(18px, calc((100% - 850px) / 2));
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .welcome {
+            margin: auto;
+            text-align: center;
+            color: #c4c5d2;
+            line-height: 1.8;
+        }
+
+        .welcome h1 {
+            color: #a99cff;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 14px 16px;
+            border-radius: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: #5144b5;
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+            background: #222635;
+            border: 1px solid #34394c;
+        }
+
+        .message-label {
+            font-size: 12px;
+            opacity: 0.75;
+            margin-bottom: 6px;
+        }
+
+        .message-content {
+            white-space: pre-wrap;
+        }
+
+        .speak-button {
+            margin-top: 10px;
+            background: #3c4257;
+            padding: 6px 10px;
+            font-size: 13px;
+        }
+
+        .composer-area {
+            border-top: 1px solid #303442;
+            padding: 17px;
+        }
+
+        .composer {
+            max-width: 850px;
+            margin: auto;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+        }
+
+        #messageInput {
+            flex: 1;
+            min-width: 0;
+            border-radius: 25px;
+            padding: 14px 17px;
+        }
+
+        #voiceButton {
+            background: #30364a;
+            font-size: 20px;
+            min-width: 48px;
+            height: 48px;
+        }
+
+        #voiceButton.listening {
+            background: #c43f56;
+            animation: pulse 1s infinite alternate;
+        }
+
+        #sendButton {
+            height: 48px;
+            padding: 0 18px;
+        }
+
+        .voice-options {
+            max-width: 850px;
+            margin: 10px auto 0;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 13px;
+            color: #c4c5d2;
+        }
+
+        .voice-options label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .voice-options input {
+            width: auto;
+        }
+
+        .status {
+            color: #bdb6ff;
+            font-size: 13px;
+            min-height: 18px;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .empty {
+            color: #aeb2c3;
+            font-size: 14px;
+            padding: 12px 0;
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.08); }
+        }
+
+        @media (max-width: 650px) {
+            .sidebar {
+                width: 145px;
+                padding: 10px;
+            }
+
+            .brand {
+                font-size: 19px;
+            }
+
+            .chat-actions {
+                flex-wrap: wrap;
+            }
+
+            .chat-actions button {
+                font-size: 11px;
+            }
+
+            .topbar {
+                padding: 15px;
+            }
+
+            .messages {
+                padding: 16px 10px;
+            }
+
+            .message {
+                max-width: 95%;
+            }
+
+            .composer-area {
+                padding: 10px;
+            }
+
+            #sendButton {
+                padding: 0 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="app">
+
+    <aside class="sidebar">
+        <div class="brand">✦ ADHU AI</div>
+
+        <button id="newChatButton">＋ New Chat</button>
+
+        <input
+            id="searchInput"
+            type="search"
+            placeholder="Search chat history..."
+            aria-label="Search chat history">
+
+        <div id="chatList" class="chat-list"></div>
+    </aside>
+
+    <main class="main">
+        <div class="topbar">ADHU AI <span style="font-size:13px;color:#aaa">· Your AI assistant</span></div>
+
+        <section id="messages" class="messages">
+            <div class="welcome">
+                <h1>Welcome to ADHU AI</h1>
+                <p>Ask anything, type your message, or press 🎙️ to speak.</p>
+            </div>
+        </section>
+
+        <div class="composer-area">
+            <form id="chatForm" class="composer">
+                <input
+                    id="messageInput"
+                    type="text"
+                    placeholder="Message ADHU AI..."
+                    autocomplete="off"
+                    aria-label="Your message">
+
+                <button
+                    type="button"
+                    id="voiceButton"
+                    title="Start voice input"
+                    aria-label="Start voice input">🎙️</button>
+
+                <button type="submit" id="sendButton">Send ➤</button>
+            </form>
+
+            <div class="voice-options">
+                <label>
+                    <input type="checkbox" id="speakReplies" checked>
+                    Speak AI replies
+                </label>
+                <button type="button" id="stopSpeechButton">Stop speech</button>
+            </div>
+
+            <div id="status" class="status" role="status"></div>
+        </div>
+    </main>
+</div>
+
+<script>
+    const chatList = document.getElementById("chatList");
+    const messagesBox = document.getElementById("messages");
+    const chatForm = document.getElementById("chatForm");
+    const messageInput = document.getElementById("messageInput");
+    const voiceButton = document.getElementById("voiceButton");
+    const sendButton = document.getElementById("sendButton");
+    const searchInput = document.getElementById("searchInput");
+    const statusBox = document.getElementById("status");
+    const speakReplies = document.getElementById("speakReplies");
+
+    let currentChatId = null;
+    let recognition = null;
+    let isListening = false;
+
+    async function api(url, options = {}) {
+        const response = await fetch(url, {
+            ...options,
+            headers: {
+                "Content-Type": "application/json",
+                ...(options.headers || {})
+            }
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            throw new Error(data.error || "Something went wrong.");
+        }
+
+        return data;
+    }
+
+    function setStatus(message) {
+        statusBox.textContent = message;
+    }
+
+    function stopSpeech() {
+        if ("speechSynthesis" in window) {
+            window.speechSynthesis.cancel();
+        }
+    }
+
+    function speakText(text) {
+        if (!("speechSynthesis" in window)) {
+            setStatus("Spoken responses are not supported in this browser.");
+            return;
+        }
+
+        stopSpeech();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "en-IN";
+        utterance.rate = 1;
+        utterance.pitch = 1;
+
+        utterance.onstart = () => setStatus("ADHU AI is speaking...");
+        utterance.onend = () => setStatus("");
+        utterance.onerror = () => setStatus("Could not play the spoken response.");
+
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function addMessage(role, content) {
+        const welcome = messagesBox.querySelector(".welcome");
+        if (welcome) {
+            welcome.remove();
+        }
+
+        const message = document.createElement("div");
+        message.className = "message " + role;
+
+        const label = document.createElement("div");
+        label.className = "message-label";
+        label.textContent = role === "user" ? "You" : "ADHU AI";
+
+        const text = document.createElement("div");
+        text.className = "message-content";
+        text.textContent = content;
+
+        message.appendChild(label);
+        message.appendChild(text);
+
+        if (role === "assistant") {
+            const speakButton = document.createElement("button");
+            speakButton.className = "speak-button";
+            speakButton.type = "button";
+            speakButton.textContent = "🔊 Speak";
+            speakButton.addEventListener("click", () => speakText(content));
+            message.appendChild(speakButton);
+        }
+
+        messagesBox.appendChild(message);
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+    }
+
+    function showWelcome() {
+        messagesBox.replaceChildren();
+
+        const welcome = document.createElement("div");
+        welcome.className = "welcome";
+
+        const heading = document.createElement("h1");
+        heading.textContent = "Welcome to ADHU AI";
+
+        const paragraph = document.createElement("p");
+        paragraph.textContent = "Ask anything, type a message, or press the microphone to speak.";
+
+        welcome.append(heading, paragraph);
+        messagesBox.appendChild(welcome);
+    }
+
+    async function loadChats() {
+        try {
+            const search = encodeURIComponent(searchInput.value.trim());
+            const chats = await api("/api/chats?search=" + search);
+
+            chatList.replaceChildren();
+
+            if (chats.length === 0) {
+                const empty = document.createElement("div");
+                empty.className = "empty";
+                empty.textContent = "No chats found.";
+                chatList.appendChild(empty);
+                return;
+            }
+
+            chats.forEach(chat => {
+                const item = document.createElement("div");
+                item.className = "chat-item" +
+                    (chat.id === currentChatId ? " active" : "");
+
+                const title = document.createElement("div");
+                title.className = "chat-title";
+                title.textContent = chat.title;
+                title.addEventListener("click", () => openChat(chat.id));
+
+                const actions = document.createElement("div");
+                actions.className = "chat-actions";
+
+                const renameButton = document.createElement("button");
+                renameButton.type = "button";
+                renameButton.textContent = "Rename";
+                renameButton.addEventListener("click", () => renameChat(chat));
+
+                const deleteButton = document.createElement("button");
+                deleteButton.type = "button";
+                deleteButton.textContent = "Delete";
+                deleteButton.className = "delete-button";
+                deleteButton.addEventListener("click", () => deleteChat(chat));
+
+                actions.append(renameButton, deleteButton);
+                item.append(title, actions);
+                chatList.appendChild(item);
+            });
+        } catch (error) {
+            setStatus(error.message);
+        }
+    }
+
+    async function createChat() {
+        try {
+            const chat = await api("/api/chats", { method: "POST" });
+            currentChatId = chat.id;
+            showWelcome();
+            await loadChats();
+            messageInput.focus();
+        } catch (error) {
+            setStatus(error.message);
+        }
+    }
+
+    async function openChat(chatId) {
+        try {
+            stopSpeech();
+            currentChatId = chatId;
+            const messages = await api(`/api/chat/${chatId}/messages`);
+
+            messagesBox.replaceChildren();
+
+            if (messages.length === 0) {
+                showWelcome();
+            } else {
+                messages.forEach(message => {
+                    addMessage(message.role, message.content);
+                });
+            }
+
+            await loadChats();
+            setStatus("");
+        } catch (error) {
+            setStatus(error.message);
+        }
+    }
+
+    async function renameChat(chat) {
+        const newTitle = prompt("Enter a new name for this chat:", chat.title);
+        if (newTitle === null || !newTitle.trim()) return;
+
+        try {
+            await api(`/api/chat/${chat.id}/rename`, {
+                method: "POST",
+                body: JSON.stringify({ title: newTitle.trim() })
+            });
+
+            await loadChats();
+            setStatus("Chat renamed.");
+        } catch (error) {
+            setStatus(error.message);
+        }
+    }
+
+    async function deleteChat(chat) {
+        if (!confirm(`Delete "${chat.title}" and its messages?`)) return;
+
+        try {
+            await api(`/api/chat/${chat.id}`, { method: "DELETE" });
+
+            if (currentChatId === chat.id) {
+                currentChatId = null;
+                showWelcome();
+            }
+
+            await loadChats();
+            setStatus("Chat deleted.");
+        } catch (error) {
+            setStatus(error.message);
+        }
+    }
+
+    async function sendMessage(text) {
+        const content = text.trim();
+        if (!content || sendButton.disabled) return;
+
+        if (!currentChatId) {
+            try {
+                const chat = await api("/api/chats", { method: "POST" });
+                currentChatId = chat.id;
+            } catch (error) {
+                setStatus(error.message);
+                return;
+            }
+        }
+
+        addMessage("user", content);
+        messageInput.value = "";
+        sendButton.disabled = true;
+        voiceButton.disabled = true;
+        setStatus("ADHU AI is thinking...");
+
+        try {
+            const result = await api(`/api/chat/${currentChatId}`, {
+                method: "POST",
+                body: JSON.stringify({ message: content })
+            });
+
+            addMessage("assistant", result.reply);
+            await loadChats();
+            setStatus("");
+
+            if (speakReplies.checked) {
+                speakText(result.reply);
+            }
+        } catch (error) {
+            addMessage("assistant", "Sorry, I couldn't answer. " + error.message);
+            setStatus(error.message);
+        } finally {
+            sendButton.disabled = false;
+            voiceButton.disabled = false;
+            messageInput.focus();
+        }
+    }
+
+    chatForm.addEventListener("submit", event => {
+        event.preventDefault();
+        sendMessage(messageInput.value);
+    });
+
+    document.getElementById("newChatButton").addEventListener("click", createChat);
+
+    searchInput.addEventListener("input", loadChats);
+
+    document.getElementById("stopSpeechButton").addEventListener("click", () => {
+        stopSpeech();
+        setStatus("Speech stopped.");
+    });
+
+    // Browser speech recognition: microphone to text.
+    const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (SpeechRecognition) {
+        recognition = new SpeechRecognition();
+        recognition.lang = "en-IN";
+        recognition.continuous = false;
+        recognition.interimResults = true;
+
+        recognition.onstart = () => {
+            isListening = true;
+            voiceButton.classList.add("listening");
+            voiceButton.textContent = "🔴";
+            setStatus("Listening... speak now.");
+        };
+
+        recognition.onresult = event => {
+            let transcript = "";
+            let finalTranscript = "";
+
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                transcript += event.results[i][0].transcript;
+
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript;
+                }
+            }
+
+            messageInput.value = transcript;
+
+            if (finalTranscript.trim()) {
+                messageInput.value = finalTranscript.trim();
+            }
+        };
+
+        recognition.onerror = event => {
+            const errors = {
+                "not-allowed": "Microphone permission was denied. Allow microphone access in your browser.",
+                "no-speech": "No speech detected. Please try again.",
+                "audio-capture": "No microphone was detected."
+            };
+
+            setStatus(errors[event.error] || "Voice input error: " + event.error);
+        };
+
+        recognition.onend = () => {
+            isListening = false;
+            voiceButton.classList.remove("listening");
+            voiceButton.textContent = "🎙️";
+
+            if (messageInput.value.trim()) {
+                setStatus("Voice captured. Press Send to ask ADHU AI.");
+            } else {
+                setStatus("");
+            }
+        };
+
+        voiceButton.addEventListener("click", () => {
+            if (isListening) {
+                recognition.stop();
+            } else {
+                try {
+                    recognition.start();
+                } catch (error) {
+                    setStatus("Please wait a moment and try the microphone again.");
+                }
+            }
+        });
+    } else {
+        voiceButton.disabled = true;
+        voiceButton.title = "Speech recognition is not supported in this browser.";
+        setStatus("Voice input is not supported in this browser. Try a recent version of Chrome.");
+    }
+
+    // Start with the saved chat list.
+    loadChats();
+</script>
+</body>
+</html>
